@@ -62,41 +62,36 @@ def get_color(obj, M):
     return color
 
 
-def trace_ray(rayO, rayD, scene):
+def trace_path(ray: Ray, depth: int) -> Color:
+    if (depth >= self.maxdepth) :
+        return BLACK  # Bounced enough times.
 
-    ambient = .05
-    diffuse_c = 1.
-    specular_c = 1.
-    specular_k = 50
+    ray.find_nearest_object()
 
-    # Find first point of intersection with the scene.
-    t = np.inf
-    for i, obj in enumerate(scene.scene):
-        t_obj = intersect(rayO, rayD, obj)
-        if t_obj < t:
-            t, obj_idx = t_obj, i
-    # Return None if the ray does not intersect any object.
-    if t == np.inf:
-        return
-    # Find the object.
-    obj = scene.scene[obj_idx]
-    # Find the point of intersection on the object.
-    M = rayO + rayD * t
-    # Find properties of the object.
-    N = get_normal(obj, M)
-    color = get_color(obj, M)
-    toL = normalize(scene.L - M)
-    toO = normalize(scene.O - M)
-    # Shadow: find if the point is shadowed or not.
-    l = [
-        intersect(M + N * .0001, toL, obj_sh) for k, obj_sh in enumerate(scene.scene) if k != obj_idx
-    ]
-    if l and min(l) < np.inf:
-        return
-    # Start computing the color.
-    col_ray = ambient
-    # Lambert shading (diffuse).
-    col_ray += obj.get('diffuse_c', diffuse_c) * max(np.dot(N, toL), 0) * color
-    # Blinn-Phong shading (specular).
-    col_ray += obj.get('specular_c', specular_c) * max(np.dot(N, normalize(toL + toO)), 0) ** specular_k * scene.color_light
-    return obj, M, N, col_ray
+    if ray.hit_something is False:
+        return BLACK  # Nothing was hit.
+
+    material = ray.thingHit.material  # material = Material()
+    emittance = material.emittance  # emittance = Color()
+
+    # Pick a random direction from here and keep going.
+    newRay = Ray()
+    newRay.origin = ray.point_where_obj_was_hit
+
+    # This is NOT a cosine-weighted distribution!
+    newRay.direction = RandomUnitVectorInHemisphereOf(ray.normal_where_obj_was_hit)
+
+    # Probability of the newRay
+    p = 1. / (2 * np.pi)
+
+    # Compute the BRDF for this ray (assuming Lambertian reflection)
+    cos_theta = np.dot(newRay.direction, ray.normal_where_obj_was_hit)
+    BRDF = material.reflectance / np.pi  # BRDF = Color()
+
+    # Recursively trace reflected light sources.
+    incoming = trace_path(newRay, depth + 1)
+
+    # Apply the Rendering Equation here.
+    return emittance + (BRDF * incoming * cos_theta / p)
+
+def multitrace(self)
