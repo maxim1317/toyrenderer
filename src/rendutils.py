@@ -62,36 +62,3 @@ def get_color(obj, M):
     return color
 
 
-def trace_path(ray: Ray, depth: int) -> Color:
-    if (depth >= self.maxdepth) :
-        return BLACK  # Bounced enough times.
-
-    ray.find_nearest_object()
-
-    if ray.hit_something is False:
-        return BLACK  # Nothing was hit.
-
-    material = ray.thingHit.material  # material = Material()
-    emittance = material.emittance  # emittance = Color()
-
-    # Pick a random direction from here and keep going.
-    newRay = Ray()
-    newRay.origin = ray.point_where_obj_was_hit
-
-    # This is NOT a cosine-weighted distribution!
-    newRay.direction = RandomUnitVectorInHemisphereOf(ray.normal_where_obj_was_hit)
-
-    # Probability of the newRay
-    p = 1. / (2 * np.pi)
-
-    # Compute the BRDF for this ray (assuming Lambertian reflection)
-    cos_theta = np.dot(newRay.direction, ray.normal_where_obj_was_hit)
-    BRDF = material.reflectance / np.pi  # BRDF = Color()
-
-    # Recursively trace reflected light sources.
-    incoming = trace_path(newRay, depth + 1)
-
-    # Apply the Rendering Equation here.
-    return emittance + (BRDF * incoming * cos_theta / p)
-
-def multitrace(self)
