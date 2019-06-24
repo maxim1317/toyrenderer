@@ -11,64 +11,23 @@ class Renderer(object):
         self.w = width
         self.h = height
 
-        self.depth_max = 5
+        self.maxdepth = 5
 
         self.scene = scene
 
     def render(self):
-        self.image = np.zeros((self.w, self.h, 3))
+        from camera import Camera
 
-        # self.image = np.vectorize(self.cast_ray)(self.image)
-        self.image = self.cast_ray(self.image)
+        camera = Camera(self.w, self.h)
+        camera.form_matrix()
 
-        self.image *= (255.0 / self.image.max())
-        self.image = self.image.astype(np.uint8)
-        # print(self.image)
-        self.save(self.image)
+        image = np.apply_along_axis(self.multitrace, 2, image)
+        # for pixel in final_image:
+        #     for i in num_samples:
+        #         r = camera.generate_ray(pixel)
+        #         pixel.color += self.trace_path(r, 0)
 
-        return self.image
-
-    def cast_ray(self, image):
-        from tqdm import tqdm
-
-        col = np.zeros(3)
-        r = float(self.w) / self.h
-        # Screen coordinates: x0, y0, x1, y1.
-        S = (-1., -1. / r + .25, 1., 1. / r + .25)
-        # Loop through all pixels.
-
-        prog = tqdm(total=100, unit_scale=True)
-
-        # print(r)
-        for i, x in enumerate(np.linspace(S[0], S[2], self.w)):
-            # if i % 10 == 0:
-                # print(int(i / float(self.w) * 100), "%")
-
-            for j, y in enumerate(np.linspace(S[1], S[3], self.h)):
-                col[:] = 0
-                self.scene.Q[:2] = (x, y)
-                D = normalize(self.scene.Q - self.scene.O)
-                depth = 0
-                rayO, rayD = self.scene.O, D
-                reflection = 1.
-                # Loop through initial and secondary rays.
-                while depth < self.depth_max:
-                    traced = trace_ray(rayO, rayD, self.scene)
-                    if not traced:
-                        break
-                    obj, M, N, col_ray = traced
-                    # Reflection: create a new ray.
-                    rayO, rayD = M + N * .0001, normalize(rayD - 2 * np.dot(rayD, N) * N)
-                    depth += 1
-                    col += reflection * col_ray
-                    reflection *= obj.get('reflection', 1.)
-                    image[self.h - j - 1, i, :] = np.clip(col, 0, 1)
-                    # print(self.h - j - 1, i)
-                prog.update(100 / (self.w * self.h))
-
-        prog.close()
-
-        return image
+        # pixel.color /= num_samples  # Average samples.
 
     def save(self, npimage):
         from PIL import Image
@@ -78,11 +37,50 @@ class Renderer(object):
 
         return
 
+    def trace_path(self, ray, depth: int):
+        from consts import BLACK
+
+        if (depth >= self.maxdepth) :
+            return BLACK  # Bounced enough times.
+
+        ray.find_nearest_object()
+
+        if ray.hit_something is False:
+            return BLACK  # Nothing was hit.
+
+        material = ray.thing_hit.material  # material = Material()
+        emittance = material.emittance  # emittance = Color()
+
+        # Pick a random direction from here and keep going.
+        newRay = Ray()
+        newRay.origin = ray.point_where_obj_was_hit
+
+        # This is NOT a cosine-weighted distribution!
+        newRay.direction = RandomUnitVectorInHemisphereOf(ray.normal_where_obj_was_hit)
+
+        # Probability of the newRay
+        p = 1. / (2 * np.pi)
+
+        # Compute the BRDF for this ray (assuming Lambertian reflection)
+        cos_theta = np.dot(newRay.direction, ray.normal_where_obj_was_hit)
+        BRDF = material.reflectance / np.pi  # BRDF = Color()
+
+        # Recursively trace reflected light sources.
+        incoming = trace_path(newRay, depth + 1)
+
+        # Apply the Rendering Equation here.
+        return emittance + (BRDF * incoming * cos_theta / p)
+
+    def multitrace(self, pixel):
+        for i in range(self.iterations):
+            ray = camera.generate_ray(pixel)
+            pixel += trace_path(ray, 0)
+
 
 def test_renderer():
     from scene import Scene
 
-    rend = Renderer(640, 640, Scene(saved="default"))
+    rend = Renderer(2, 2, Scene(saved="default"))
     rend.render()
 
 
