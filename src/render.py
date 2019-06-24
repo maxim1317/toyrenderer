@@ -7,80 +7,90 @@ class Renderer(object):
 
     image = None
 
-    def __init__(self, width, height, scene):
+    def __init__(self, width, height):
         self.w = width
         self.h = height
 
         self.maxdepth = 5
+        self.iterations = 1
 
-        self.scene = scene
-
-    def render(self):
+    def render(self, config="../scenes/cam_n_plane.json"):
         from camera import Camera
+        from scene import Scene
+        from tqdm import tqdm
 
-        camera = Camera(self.w, self.h)
-        camera.form_matrix()
+        self.config = self.load_config(path=config)
 
-        image = np.apply_along_axis(self.multitrace, 2, image)
-        # for pixel in final_image:
-        #     for i in num_samples:
-        #         r = camera.generate_ray(pixel)
-        #         pixel.color += self.trace_path(r, 0)
+        self.scene  = Scene(objects=self.config["scene"])
 
-        # pixel.color /= num_samples  # Average samples.
+        self.camera = Camera(self.w, self.h, params=self.config["camera"])
+        self.camera.form_matrix()
 
-    def save(self, npimage):
+        # for pixel in np.ndindex(camera.matrix.shape)
+        # camera.matrix = np.apply_along_axis(self.multitrace, 2, camera.matrix)
+
+        bar = tqdm(total=(self.camera.matrix.size * self.iterations), unit_scale=True)
+        self.camera.matrix = np.vectorize(self.multitrace)(self.camera.matrix, bar)
+        bar.close()
+        # print(self.camera.matrix)
+        self.save()
+
+    def save(self):
         from PIL import Image
+
+        npimage = self.camera.matrix_as_array()
+
+        npimage = np.ascontiguousarray(npimage.transpose(1, 0, 2))
+
+        # npimage *= 255
+        npimage = npimage.astype(np.uint8)
+        # print(npimage)
 
         image = Image.fromarray(npimage, 'RGB')
         image.save('test.png')
 
         return
 
-    def trace_path(self, ray, depth: int):
-        from consts import BLACK
+    def load_config(self, path):
+        from utils import json_to_dict
+        return json_to_dict(path)
 
-        if (depth >= self.maxdepth) :
-            return BLACK  # Bounced enough times.
-
-        ray.find_nearest_object()
-
-        if ray.hit_something is False:
-            return BLACK  # Nothing was hit.
-
-        material = ray.thing_hit.material  # material = Material()
-        emittance = material.emittance  # emittance = Color()
-
-        # Pick a random direction from here and keep going.
-        newRay = Ray()
-        newRay.origin = ray.point_where_obj_was_hit
-
-        # This is NOT a cosine-weighted distribution!
-        newRay.direction = RandomUnitVectorInHemisphereOf(ray.normal_where_obj_was_hit)
-
-        # Probability of the newRay
-        p = 1. / (2 * np.pi)
-
-        # Compute the BRDF for this ray (assuming Lambertian reflection)
-        cos_theta = np.dot(newRay.direction, ray.normal_where_obj_was_hit)
-        BRDF = material.reflectance / np.pi  # BRDF = Color()
-
-        # Recursively trace reflected light sources.
-        incoming = trace_path(newRay, depth + 1)
-
-        # Apply the Rendering Equation here.
-        return emittance + (BRDF * incoming * cos_theta / p)
-
-    def multitrace(self, pixel):
+    def multitrace(self, pixel, bar):
         for i in range(self.iterations):
-            ray = camera.generate_ray(pixel)
-            pixel += trace_path(ray, 0)
+            ray = self.camera.generate_ray(pixel)
+            pixel.color = self.get_color(ray)
+            bar.update()
+        return pixel
+
+    def get_color(self, ray):
+        t = ray.is_hit(self.scene.objects)
+
+        if t > 0:
+            # N = normalize(ray.point_at_parameter(t) - np.array([0, 0, -1]))
+
+            # color = (.5 * (N + 1)) * 255
+            # print(color)
+
+            color = ray.object_hit["color"]
+
+            return color
+        else:
+            return self.get_bg_color(ray)
+
+    def get_bg_color(self, ray):
+        # print(ray.direction)
+        unit_direction = normalize(ray.direction)
+        t = .5 * (unit_direction[1] + 1.)
+
+        color = (1. - t) * np.array([1., 1., 1.]) + t * np.array([.5, .7, 1.])
+        color *= 255.
+
+        return color
 
 
 def test_renderer():
-    from scene import Scene
 
-    rend = Renderer(2, 2, Scene(saved="default"))
+    rend = Renderer(400, 200)
     rend.render()
 
 
