@@ -21,7 +21,7 @@ class Camera(object):
         pass
 
     def form_matrix(self):
-        from pixel import Pixel
+        from .pixel import Pixel
 
         self.matrix = np.ndarray(shape=(self.w, self.h), dtype=np.object)
         # print(self.matrix.shape)
@@ -35,10 +35,13 @@ class Camera(object):
         @return     The pixel position.
         """
 
-        return (1.0 * pixel.ix / self.w, 1.0 * pixel.iy / self.h)
+        return float(pixel.ix) / self.w, float(pixel.iy) / self.h
+
+        # for antialiasing:
+        # return ((pixel.ix + 0.5 * (np.random.uniform() - 0.5)) / self.w, (pixel.iy + 0.5 * (np.random.uniform() - 0.5)) / self.h)
 
     def generate_ray(self, pixel):
-        from ray import Ray
+        from .ray import Ray
 
         u, v = self.get_offset(pixel)
         ray = Ray(origin=self.origin, direction=(self.LLCorner + u * self.horizontal + v * self.vertical))
@@ -52,11 +55,14 @@ class Camera(object):
             # print(self.matrix[ix, iy])
             nparray[ix, iy] = self.matrix[ix, iy].color
 
+        nparray = np.ascontiguousarray(nparray.transpose(1, 0, 2))
+        nparray = nparray.astype(np.uint8)
+
         return nparray
 
 
 def camera_test():
-    from utils import json_to_dict
+    from .utils import json_to_dict
 
     camera = Camera(2, 2, json_to_dict('../scenes/cam_n_plane.json')["camera"])
     camera.form_matrix()

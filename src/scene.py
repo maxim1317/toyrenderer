@@ -13,10 +13,12 @@ class Scene(object):
         self.objects = [add_fn[obj["type"]](obj["center"], obj["radius"], obj["color"]) for obj in objects]
 
     def add_sphere(self, center, radius, color):
-        return dict(
-            type='sphere',
-            center=np.array(center),
-            radius=np.array(radius),
-            color=np.array(color),
-            reflection=.5
-        )
+        from .objects.sphere import Sphere
+
+        params = {
+            "center": np.array(center),
+            "radius": np.array(radius),
+            "color": np.array(color),
+        }
+
+        return Sphere(params)

@@ -1,5 +1,5 @@
 import numpy as np
-from rendutils import *
+from .rendutils import *
 
 
 class Renderer(object):
@@ -14,14 +14,19 @@ class Renderer(object):
         self.maxdepth = 5
         self.iterations = 1
 
-    def render(self, config="../scenes/cam_n_plane.json"):
-        from camera import Camera
-        from scene import Scene
+    def render(self, config="scenes/cam_n_plane.json"):
         from tqdm import tqdm
+        from .camera import Camera
+        from .scene import Scene
+        from .hitable_list import HitableList
 
         self.config = self.load_config(path=config)
 
         self.scene  = Scene(objects=self.config["scene"])
+
+        hitable_list = self.scene.objects
+
+        self.world = HitableList(hitable_list)
 
         self.camera = Camera(self.w, self.h, params=self.config["camera"])
         self.camera.form_matrix()
@@ -37,43 +42,56 @@ class Renderer(object):
 
     def save(self):
         from PIL import Image
+        # from PIL import ImageOps
 
         npimage = self.camera.matrix_as_array()
 
-        npimage = np.ascontiguousarray(npimage.transpose(1, 0, 2))
-
-        # npimage *= 255
-        npimage = npimage.astype(np.uint8)
-        # print(npimage)
-
         image = Image.fromarray(npimage, 'RGB')
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        # image = ImageOps.mirror(image)
+
         image.save('test.png')
 
         return
 
     def load_config(self, path):
-        from utils import json_to_dict
+        from .utils import json_to_dict
         return json_to_dict(path)
 
     def multitrace(self, pixel, bar):
+        color = np.array([0, 0, 0], dtype='float64')
+
+        k = 0
+
         for i in range(self.iterations):
+            k += 1
             ray = self.camera.generate_ray(pixel)
-            pixel.color = self.get_color(ray)
+            color += self.get_color(ray, self.world)
             bar.update()
+        color /= self.iterations
+        pixel.color = color.astype('uint8')
+
         return pixel
 
-    def get_color(self, ray):
-        t = ray.is_hit(self.scene.objects)
+    def get_color(self, ray, world):
+        from .hitable import HitRecord
 
-        if t > 0:
-            # N = normalize(ray.point_at_parameter(t) - np.array([0, 0, -1]))
+        rec = HitRecord(None, None, None, None)
+        hit, rec = world.hit(ray, 0, np.inf, rec)
+        if hit:
+            N = normalize(rec.normal - np.array([0, 0, -1]))
+            normal_color = 0.5 * (N + 1)
+            # print(normal_color)
 
-            # color = (.5 * (N + 1)) * 255
-            # print(color)
+            color = rec.color
 
-            color = ray.object_hit["color"]
-
-            return color
+            color = color.astype('float64')
+            normalized_color = color * normal_color
+            # normalized_color = normalized_color.astype('uint8')
+            # print(normal_color)
+            # return (normal_color * 255.9999).astype('uint8')
+            return normalized_color
+            # return color
         else:
             return self.get_bg_color(ray)
 
@@ -83,16 +101,8 @@ class Renderer(object):
         t = .5 * (unit_direction[1] + 1.)
 
         color = (1. - t) * np.array([1., 1., 1.]) + t * np.array([.5, .7, 1.])
-        color *= 255.
+        color *= 255.9999
 
         return color
 
 
-def test_renderer():
-
-    rend = Renderer(400, 200)
-    rend.render()
-
-
-if __name__ == '__main__':
-    test_renderer()
