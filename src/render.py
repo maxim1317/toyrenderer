@@ -69,29 +69,22 @@ class Renderer(object):
             color += self.get_color(ray, self.world)
             bar.update()
         color /= self.iterations
+        color = np.sqrt(color)
+        color *= 255.9999
         pixel.color = color.astype('uint8')
 
         return pixel
 
     def get_color(self, ray, world):
         from .hitable import HitRecord
+        from .ray import Ray
 
         rec = HitRecord(None, None, None, None)
-        hit, rec = world.hit(ray, 0, np.inf, rec)
+        hit, rec = world.hit(ray, 0.0001, np.inf, rec)
         if hit:
-            N = normalize(rec.normal - np.array([0, 0, -1]))
-            normal_color = 0.5 * (N + 1)
-            # print(normal_color)
+            target = rec.p + rec.normal + random_in_unit_sphere()
 
-            color = rec.color
-
-            color = color.astype('float64')
-            normalized_color = color * normal_color
-            # normalized_color = normalized_color.astype('uint8')
-            # print(normal_color)
-            # return (normal_color * 255.9999).astype('uint8')
-            return normalized_color
-            # return color
+            return 0.5 * self.get_color(Ray(rec.p, target - rec.p), world)
         else:
             return self.get_bg_color(ray)
 
@@ -101,7 +94,7 @@ class Renderer(object):
         t = .5 * (unit_direction[1] + 1.)
 
         color = (1. - t) * np.array([1., 1., 1.]) + t * np.array([.5, .7, 1.])
-        color *= 255.9999
+        # color *= 255.9999
 
         return color
 
