@@ -4,7 +4,7 @@ import numpy as np
 class Camera(object):
     """docstring for Camera"""
 
-    def __init__(self, w, h, params):
+    def __init__(self, w, h, params, antialiasing):
         self.matrix    = None
 
         self.center     = np.array(params["center"])
@@ -16,6 +16,8 @@ class Camera(object):
 
         self.w = w
         self.h = h
+
+        self.antialiasing = antialiasing
         # self.matrix_real_size = (3.6, 2.4)  # Full frame he-he...
 
         pass
@@ -35,10 +37,10 @@ class Camera(object):
         @return     The pixel position.
         """
 
-        return float(pixel.ix) / self.w, float(pixel.iy) / self.h
-
-        # for antialiasing:
-        # return ((pixel.ix + 0.5 * (np.random.uniform() - 0.5)) / self.w, (pixel.iy + 0.5 * (np.random.uniform() - 0.5)) / self.h)
+        if self.antialiasing:
+            return ((pixel.ix + 0.5 * (np.random.uniform() - 0.5)) / self.w, (pixel.iy + 0.5 * (np.random.uniform() - 0.5)) / self.h)
+        else:
+            return float(pixel.ix) / self.w, float(pixel.iy) / self.h
 
     def generate_ray(self, pixel):
         from .ray import Ray

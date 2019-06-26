@@ -10,7 +10,7 @@ class Sphere(hitable.Hitable):
     def __init__(self, params):
         self.center = params["center"]
         self.radius = params["radius"]
-        self.color  = params["color"]
+        self.material  = params["material"]
 
     def hit(self, ray, t_min, t_max, rec):
         # from .. import rendutils
@@ -29,7 +29,7 @@ class Sphere(hitable.Hitable):
                 rec.t = temp
                 rec.p = ray.point_at_parameter(rec.t)
                 rec.normal = (rec.p - self.center) / self.radius
-                rec.color = self.color
+                rec.material = self.material
 
                 return (True, rec)
 
@@ -38,7 +38,7 @@ class Sphere(hitable.Hitable):
                 rec.t = temp
                 rec.p = ray.point_at_parameter(rec.t)
                 rec.normal = (rec.p - self.center) / self.radius
-                rec.color = self.color
+                rec.material = self.material
 
                 return (True, rec)
 

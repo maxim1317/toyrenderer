@@ -12,7 +12,7 @@ class Renderer(object):
         self.h = height
 
         self.maxdepth = 5
-        self.iterations = 1
+        self.iterations = 5
 
     def render(self, config="scenes/cam_n_plane.json"):
         from tqdm import tqdm
@@ -28,7 +28,12 @@ class Renderer(object):
 
         self.world = HitableList(hitable_list)
 
-        self.camera = Camera(self.w, self.h, params=self.config["camera"])
+        self.camera = Camera(
+            self.w,
+            self.h,
+            params=self.config["camera"],
+            antialiasing=(self.iterations - 1)
+        )
         self.camera.form_matrix()
 
         # for pixel in np.ndindex(camera.matrix.shape)
@@ -61,30 +66,40 @@ class Renderer(object):
     def multitrace(self, pixel, bar):
         color = np.array([0, 0, 0], dtype='float64')
 
-        k = 0
-
         for i in range(self.iterations):
-            k += 1
             ray = self.camera.generate_ray(pixel)
-            color += self.get_color(ray, self.world)
+            color += self.get_color(ray, self.world, 0)
+
             bar.update()
+
         color /= self.iterations
         color = np.sqrt(color)
         color *= 255.9999
+
         pixel.color = color.astype('uint8')
 
         return pixel
 
-    def get_color(self, ray, world):
+    def get_color(self, ray, world, depth):
         from .hitable import HitRecord
         from .ray import Ray
 
         rec = HitRecord(None, None, None, None)
         hit, rec = world.hit(ray, 0.0001, np.inf, rec)
         if hit:
-            target = rec.p + rec.normal + random_in_unit_sphere()
+            scattered_ray = Ray(np.zeros(3), np.zeros(3))
+            attenuation   = np.zeros(3)
 
-            return 0.5 * self.get_color(Ray(rec.p, target - rec.p), world)
+            scatter, attenuation, scattered_ray = rec.material.scatter(
+                ray=ray,
+                rec=rec,
+                attenuation=attenuation,
+                scattered_ray=scattered_ray
+            )
+            if depth < self.maxdepth and scatter:
+                return attenuation * self.get_color(scattered_ray, world, depth + 1)
+            else:
+                return np.zeros(3)
         else:
             return self.get_bg_color(ray)
 

@@ -14,7 +14,11 @@
                 "center": [ 0, 0, -1],
                 "radius": 0.5,
 
-                "color" : [249,  38, 114]
+                "material" : {
+                    "type"  : "lambertian",
+
+                    "albedo": [0.8, 0.3, 0.3]
+                }
             },
             {
                 "type"  : "sphere",
@@ -22,7 +26,37 @@
                 "center": [ 0,-100.5, -1],
                 "radius": 100,
 
-                "color" : [166, 226,  46]
+                "material" : {
+                    "type"  : "lambertian",
+
+                    "albedo": [0.8, 0.8, 0.0]
+                }
+            },
+            {
+                "type"  : "sphere",
+
+                "center": [ 1, 0, -1],
+                "radius": 0.5,
+
+                "material" : {
+                    "type"  : "metal",
+
+                    "albedo": [0.8, 0.6, 0.2],
+                    "fuzz"  : 0.1
+                }
+            },
+            {
+                "type"  : "sphere",
+
+                "center": [-1, 0, -1],
+                "radius": 0.5,
+
+                "material" : {
+                    "type"  : "metal",
+
+                    "albedo": [0.8, 0.8, 0.8],
+                    "fuzz"  : 0.3
+                }
             }
     ]
 }

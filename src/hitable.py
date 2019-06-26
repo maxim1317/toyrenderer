@@ -1,7 +1,8 @@
 from recordclass import recordclass
+# from .material import Material
 
 
-HitRecord = recordclass('HitRecord', ['t', 'p', 'normal', 'color'])
+HitRecord = recordclass('HitRecord', ['t', 'p', 'normal', 'material'])
 
 
 class Hitable(object):
