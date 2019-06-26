@@ -11,8 +11,8 @@ class Renderer(object):
         self.w = width
         self.h = height
 
-        self.maxdepth = 5
-        self.iterations = 5
+        self.maxdepth = 50
+        self.iterations = 50
 
     def render(self, config="scenes/cam_n_plane.json"):
         from tqdm import tqdm
