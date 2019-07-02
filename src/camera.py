@@ -38,7 +38,7 @@ class Camera(object):
         """
 
         if self.antialiasing:
-            return ((pixel.ix + 0.5 * (np.random.uniform() - 0.5)) / self.w, (pixel.iy + 0.5 * (np.random.uniform() - 0.5)) / self.h)
+            return ((pixel.ix + np.random.uniform()) / self.w, (pixel.iy + np.random.uniform()) / self.h)
         else:
             return float(pixel.ix) / self.w, float(pixel.iy) / self.h
 

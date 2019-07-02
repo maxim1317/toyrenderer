@@ -11,7 +11,7 @@
             {
                 "type"  : "sphere",
 
-                "center": [ 0, 0, -1],
+                "center": [ 0, 0, -1.2],
                 "radius": 0.5,
 
                 "material" : {
@@ -23,7 +23,7 @@
             {
                 "type"  : "sphere",
 
-                "center": [ 0,-100.5, -1],
+                "center": [ 0,-100.5, -1.2],
                 "radius": 100,
 
                 "material" : {
@@ -35,7 +35,7 @@
             {
                 "type"  : "sphere",
 
-                "center": [ 1, 0, -1],
+                "center": [ 1, 0, -1.2],
                 "radius": 0.5,
 
                 "material" : {
@@ -48,14 +48,25 @@
             {
                 "type"  : "sphere",
 
-                "center": [-1, 0, -1],
+                "center": [-1, 0, -1.2],
                 "radius": 0.5,
 
                 "material" : {
-                    "type"  : "metal",
+                    "type"  : "dielectric",
 
-                    "albedo": [0.8, 0.8, 0.8],
-                    "fuzz"  : 0.3
+                    "ref_idx": 1.5
+                }
+            },
+            {
+                "type"  : "sphere",
+
+                "center": [-1, 0, -1.2],
+                "radius": -0.45,
+
+                "material" : {
+                    "type"  : "dielectric",
+
+                    "ref_idx": 1.5
                 }
             }
     ]

@@ -27,10 +27,17 @@ def add_metal(params):
     return Metal(np.array(params["albedo"]), params["fuzz"])
 
 
+def add_dielectric(params):
+    from .materials.dielectric import Dielectric
+
+    return Dielectric(params["ref_idx"])
+
+
 add_obj = {
     "sphere": add_sphere
 }
 add_mat = {
     "lambertian": add_lambertian,
-    "metal": add_metal
+    "metal": add_metal,
+    "dielectric": add_dielectric
 }
